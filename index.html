@@ -1,33 +1,165 @@
-url:<input type="text" id="url" value="http://127.0.0.1:11434">
-model:<input type="text" id="model" value="llama2-uncensored">
-chat:<input type="text" id="chat"> <button>send</button>
+<!DOCTYPE html>
+<html lang="en">
 
-answer<h1></h1>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-size: 16px;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow-y: hidden;
+        }
 
-<script>
-    document.querySelector('button').addEventListener('click', function () {
-        url = document.querySelector('#url').value;
-        model = document.querySelector('#model').value;
-        console.log(url);
+        .chat-box {
+            width: 95vw;
+            height: calc(100vh - 5vw);
+            max-width: 100%;
+            margin: 2.5vw;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #f0f0f0;
+            justify-content: center;
+            height: 10vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-messages {
+            padding: 1rem;
+            height: calc(100vh - 5vw - 10vh - 10vh - 1rem - 1rem);
+            overflow-y: scroll;
+        }
+
+        .user-message,
+        .other-message {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .user-message {
+            background-color: #e6f7ff;
+            text-align: right;
+        }
+
+        .other-message {
+            background-color: #f2f2f2;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1vw;
+            border-top: 1px solid #ccc;
+            height: 10vh;
+        }
+
+        .chatInput {
+            width: 100%;
+            margin-right: 1rem;
+        }
+
+        .message-input {
+            flex: 1;
+            margin-right: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 0.25rem;
+        }
+
+        .send-button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="chat-box">
+        <div class="chat-header">Chat Box</div>
+        <div class="chat-messages">
+            <div class="other-message">What can i help you with today?</div>
+        </div>
+        <div class="input-area">
+            <input type="text" class="chatInput" placeholder="Type your message...">
+            <button class="send-button">Send</button>
+        </div>
+    </div>
 
 
-        fetch(url + "/api/generate", {
-            method: 'POST',
-            body: JSON.stringify({
-                "model": model,
-                "prompt": document.querySelector('#chat').value
-            })
-        }).then(function (response) {
-            return response.text();
-        }).then(function (data) {
-            result = "";
-            data.split("\n").forEach(function (line) {
-                try {
-                    result += JSON.parse(line).response;
-                } catch (e) {
-                }
-            });
-            document.querySelector('h1').innerText = result;
+    <div class="parameters" style="display: none;">
+        <p>url:</p><input type="text" id="url" value="http://127.0.0.1:11434">
+        <p>model:</p><input type="text" id="model" value="llama2-uncensored">
+    </div>
+
+
+    <script>
+
+        document.querySelector('.send-button').addEventListener("click", sendMessage);
+        document.querySelector('.chatInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
         });
-    });
-</script>
+
+        messageHistory = [];
+
+        function sendMessage() {
+            document.querySelector('.chat-messages').innerHTML += `<div class="user-message">${document.querySelector('.chatInput').value}</div>`;
+
+            url = document.querySelector('#url').value;
+            model = document.querySelector('#model').value;
+            console.log(url);
+
+
+            messageHistory.push({
+                "role": "user",
+                "content": document.querySelector('.chatInput').value
+            });
+
+            fetch(url + "/api/chat", {
+                method: 'POST',
+                body: JSON.stringify({
+                    "model": model,
+                    "stream": false,
+                    "messages": messageHistory
+                })
+            }).then(function (response) {
+                console.log(response);
+                return response.text();
+            }).then(function (data) {
+                console.log(data);
+
+                result = JSON.parse(data).message.content;
+
+                messageHistory.push({
+                    "role": "assistant",
+                    "content": result
+                });
+
+                document.querySelector('.chat-messages').innerHTML += `<div class="other-message">${result}</div>`;
+                document.querySelector('.chat-messages').scrollTo(0, document.querySelector('.chat-messages').scrollHeight);
+            });
+
+            document.querySelector('.chatInput').value = "";
+            document.querySelector('.chatInput').focus();
+        }
+    </script>
+
+
+</body>
+
+</html>
