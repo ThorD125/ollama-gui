@@ -1,0 +1,33 @@
+url:<input type="text" id="url" value="http://127.0.0.1:11434">
+model:<input type="text" id="model" value="llama2-uncensored">
+chat:<input type="text" id="chat"> <button>send</button>
+
+answer<h1></h1>
+
+<script>
+    document.querySelector('button').addEventListener('click', function () {
+        url = document.querySelector('#url').value;
+        model = document.querySelector('#model').value;
+        console.log(url);
+
+
+        fetch(url + "/api/generate", {
+            method: 'POST',
+            body: JSON.stringify({
+                "model": model,
+                "prompt": document.querySelector('#chat').value
+            })
+        }).then(function (response) {
+            return response.text();
+        }).then(function (data) {
+            result = "";
+            data.split("\n").forEach(function (line) {
+                try {
+                    result += JSON.parse(line).response;
+                } catch (e) {
+                }
+            });
+            document.querySelector('h1').innerText = result;
+        });
+    });
+</script>
